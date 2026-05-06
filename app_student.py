@@ -391,8 +391,3 @@ st.download_button(
 
 if rule_count < 2:
     st.warning("Cria pelo menos 2 regras na árvore antes de a descarregar.")
-
-st.info(
-    "Depois de descarregar, envia este ficheiro ao professor "
-    "(Teams / email / upload na app central)."
-)

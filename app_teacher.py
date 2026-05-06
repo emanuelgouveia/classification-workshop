@@ -212,7 +212,7 @@ bins = np.linspace(0, 1, 21)
 # Train RF upfront so both plots render together
 X_train, y_train, encoders = preprocess_for_model(df_train)
 X_test, y_test, _ = preprocess_for_model(df_test, fit_encoders=encoders)
-rf = RandomForestClassifier(n_estimators=100, random_state=0)
+rf = RandomForestClassifier(n_estimators=100, max_depth=3)
 if y_train is not None:
     rf.fit(X_train, y_train)
     rf_probs = rf.predict_proba(X_test)[:, 1]
