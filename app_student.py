@@ -49,8 +49,9 @@ df = load_data()
 target = "Survived"
 features = df.columns.drop(target)  # Exclude less relevant features
 
-# Drop rows with missing values to simplify the activity
-df = df.dropna()
+# Only drop rows where the target itself is missing (preserves the real ~38% survival rate).
+# Rows with missing feature values are kept; NaNs are handled at plot/split time per feature.
+df = df.dropna(subset=[target])
 
 # Store tree structure persistently during the session
 if "tree_nodes" not in st.session_state:
@@ -106,11 +107,14 @@ else:
 
 controls_col, plot_col, branch_col = st.columns([1, 2, 2], gap="large")
 
-is_numeric_feature = (not df_sample.empty) and pd.api.types.is_numeric_dtype(df_sample[selected_feature])
+# Drop NaN for the selected feature only — keeps full sample size for other features
+df_sample_feat = df_sample.dropna(subset=[selected_feature]) if not df_sample.empty else df_sample
+
+is_numeric_feature = (not df_sample_feat.empty) and pd.api.types.is_numeric_dtype(df_sample_feat[selected_feature])
 is_low_cardinality_integer = (
-    (not df_sample.empty)
-    and pd.api.types.is_integer_dtype(df_sample[selected_feature])
-    and df_sample[selected_feature].nunique() < 10
+    (not df_sample_feat.empty)
+    and pd.api.types.is_integer_dtype(df_sample_feat[selected_feature])
+    and df_sample_feat[selected_feature].nunique() < 10
 )
 
 highlighted_categories = []
@@ -122,10 +126,10 @@ if df_sample.empty:
         st.info("Sem gráfico disponível.")
 elif is_numeric_feature and not is_low_cardinality_integer:
     with controls_col:
-        feature_min = df_sample[selected_feature].min()
-        feature_max = df_sample[selected_feature].max()
+        feature_min = df_sample_feat[selected_feature].min()
+        feature_max = df_sample_feat[selected_feature].max()
 
-        if pd.api.types.is_integer_dtype(df_sample[selected_feature]):
+        if pd.api.types.is_integer_dtype(df_sample_feat[selected_feature]):
             marker_value = st.slider(
                 f"Limiar da seleção em {selected_feature}",
                 min_value=int(feature_min),
@@ -145,11 +149,11 @@ elif is_numeric_feature and not is_low_cardinality_integer:
     with plot_col:
         st.write(f"Histograma de {selected_feature}")
         fig, ax = plt.subplots(figsize=(6, 4))
-        bins = np.linspace(df_sample[selected_feature].min(), df_sample[selected_feature].max() + 1, 10)
-        df_sample[df_sample[target] == 1][selected_feature].hist(
+        bins = np.linspace(df_sample_feat[selected_feature].min(), df_sample_feat[selected_feature].max() + 1, 10)
+        df_sample_feat[df_sample_feat[target] == 1][selected_feature].hist(
             alpha=0.6, label="Sobreviveu", ax=ax, color="#1f77b4", bins=bins
         )
-        df_sample[df_sample[target] == 0][selected_feature].hist(
+        df_sample_feat[df_sample_feat[target] == 0][selected_feature].hist(
             alpha=0.6, label="Não sobreviveu", ax=ax, color="#d62728", bins=bins
         )
         ax.axvline(marker_value, color="black", linestyle="--", linewidth=2, label="Limiar")
@@ -158,7 +162,7 @@ elif is_numeric_feature and not is_low_cardinality_integer:
         ax.legend()
         st.pyplot(fig, use_container_width=True)
 else:
-    counts = df_sample.groupby([selected_feature, target]).size().unstack(fill_value=0)
+    counts = df_sample_feat.groupby([selected_feature, target]).size().unstack(fill_value=0)
 
     with controls_col:
         st.write(f"Categorias a selecionar em {selected_feature}")
