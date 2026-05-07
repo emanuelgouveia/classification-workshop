@@ -71,7 +71,7 @@ def preprocess_for_model(df, fit_encoders=None):
 # ---------------------------
 # Upload student JSONs
 # ---------------------------
-st.sidebar.header("Upload de árvores (fiches JSON)")
+st.sidebar.header("Upload de árvores (ficheiros JSON)")
 uploaded_files = st.sidebar.file_uploader("Carrega os ficheiros .json gerados pelos grupos", accept_multiple_files=True, type=["json"]) 
 
 # helper to evaluate a single tree on a dataframe
